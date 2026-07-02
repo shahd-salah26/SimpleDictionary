@@ -1,0 +1,128 @@
+package com.shahdsalah.simpledictionary;
+import android.content.Intent;
+import android.os.Bundle;
+import android.widget.Toast;
+import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.shahdsalah.simpledictionary.adapter.DictionaryAdapter;
+import com.shahdsalah.simpledictionary.model.DictionaryWord;
+import java.util.ArrayList;
+public class MainActivity extends AppCompatActivity implements DictionaryAdapter.OnItemClickListener {
+
+    private RecyclerView recyclerView;
+    private FloatingActionButton fabAdd;
+
+    private ArrayList<DictionaryWord> wordList;
+    private DictionaryAdapter adapter;
+
+    private ActivityResultLauncher<Intent> launcher;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        EdgeToEdge.enable(this);
+        setContentView(R.layout.activity_main);
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
+
+        recyclerView = findViewById(R.id.recyclerViewWords);
+        fabAdd = findViewById(R.id.fabAdd);
+
+        wordList = new ArrayList<>();
+
+        if (savedInstanceState != null) {
+            ArrayList<DictionaryWord> saved =
+                    (ArrayList<DictionaryWord>) savedInstanceState.getSerializable("words");
+
+            if (saved != null) {
+                wordList.addAll(saved);
+            }
+        }
+
+        adapter = new DictionaryAdapter(wordList, this);
+
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setAdapter(adapter);
+
+        launcher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+
+                        Intent data = result.getData();
+
+                        String word = data.getStringExtra("word");
+                        String meaning = data.getStringExtra("meaning");
+
+                        boolean edit = data.getBooleanExtra("edit", false);
+                        int position = data.getIntExtra("position", -1);
+
+                        if (edit) {
+
+                            wordList.set(position, new DictionaryWord(word, meaning));
+                            adapter.notifyItemChanged(position);
+
+                            Toast.makeText(this, "Word Updated", Toast.LENGTH_SHORT).show();
+
+                        } else {
+
+                            wordList.add(new DictionaryWord(word, meaning));
+                            adapter.notifyItemInserted(wordList.size() - 1);
+
+                            Toast.makeText(this, "Word Added", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+
+        fabAdd.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, AddEditActivity.class);
+            intent.putExtra("edit", false);
+            launcher.launch(intent);
+        });
+    }
+
+    @Override
+    public void onItemClick(int position) {
+
+        Intent intent = new Intent(MainActivity.this, AddEditActivity.class);
+
+        intent.putExtra("edit", true);
+        intent.putExtra("position", position);
+        intent.putExtra("word", wordList.get(position).getWord());
+        intent.putExtra("meaning", wordList.get(position).getMeaning());
+
+        launcher.launch(intent);
+    }
+
+    @Override
+    public void onItemLongClick(int position) {
+
+        wordList.remove(position);
+
+        adapter.notifyItemRemoved(position);
+
+        Toast.makeText(this, "Word Deleted", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putSerializable("words", wordList);
+    }
+}

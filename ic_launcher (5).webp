@@ -1,0 +1,80 @@
+package com.shahdsalah.simpledictionary.adapter;
+
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.shahdsalah.simpledictionary.R;
+import com.shahdsalah.simpledictionary.model.DictionaryWord;
+
+import java.util.ArrayList;
+
+public class DictionaryAdapter extends RecyclerView.Adapter<DictionaryAdapter.ViewHolder> {
+
+    private ArrayList<DictionaryWord> wordList;
+    private OnItemClickListener listener;
+
+    public interface OnItemClickListener {
+        void onItemClick(int position);
+        void onItemLongClick(int position);
+    }
+
+    public DictionaryAdapter(ArrayList<DictionaryWord> wordList,
+                             OnItemClickListener listener) {
+        this.wordList = wordList;
+        this.listener = listener;
+    }
+
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_dictionary, parent, false);
+
+        return new ViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+
+        DictionaryWord word = wordList.get(position);
+
+        holder.tvWord.setText(word.getWord());
+        holder.tvMeaning.setText(word.getMeaning());
+
+    }
+
+    @Override
+    public int getItemCount() {
+        return wordList.size();
+    }
+
+    class ViewHolder extends RecyclerView.ViewHolder {
+
+        TextView tvWord, tvMeaning;
+
+        public ViewHolder(@NonNull View itemView) {
+            super(itemView);
+
+            tvWord = itemView.findViewById(R.id.tvWord);
+            tvMeaning = itemView.findViewById(R.id.tvMeaning);
+
+            itemView.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onItemClick(getAdapterPosition());
+                }
+            });
+
+            itemView.setOnLongClickListener(v -> {
+                if (listener != null) {
+                    listener.onItemLongClick(getAdapterPosition());
+                }
+                return true;
+            });
+        }
+    }
+}
